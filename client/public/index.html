@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Skin Cancer Screening & Lesion Evolution Framework</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        medical: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#0f172a'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Custom scrollbar and animations */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-ring-anim {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+
+        @keyframes scan-line {
+            0% { top: 0%; opacity: 0.8; }
+            50% { top: 95%; opacity: 1; }
+            100% { top: 0%; opacity: 0.8; }
+        }
+        .scan-line-anim {
+            animation: scan-line 2.5s infinite ease-in-out;
+        }
+
+        /* Print styles for PDF export */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            .shadow-lg, .shadow-md, .shadow-sm, .shadow-xl {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+            }
+            .sticky {
+                position: static !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-blue-100 selection:text-blue-900">
+
+    <!-- CRITICAL REQUIREMENT: STICKY YELLOW PROTOTYPE WARNING BANNER -->
+    <div id="disclaimer-banner" class="bg-amber-100 border-b-2 border-amber-400 text-amber-950 px-4 py-2.5 shadow-sm sticky top-0 z-50 flex items-center justify-between transition-all">
+        <div class="max-w-7xl mx-auto w-full flex items-center justify-center text-xs sm:text-sm font-semibold tracking-wide text-center">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600 text-base sm:text-lg mr-2 shrink-0 animate-bounce"></i>
+            <span><strong>Prototype Disclaimer:</strong> This system is for research screening only. It is <u>NOT</u> a substitute for professional medical diagnosis.</span>
+        </div>
+    </div>
+
+    <!-- MAIN HEADER NAVIGATION -->
+    <header class="bg-slate-900 text-white shadow-md border-b border-slate-800 sticky top-[41px] z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand & Title -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('home')">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-microscope text-xl"></i>
+                </div>
+                <div>
+                    <div class="font-heading font-bold text-lg leading-tight tracking-tight flex items-center gap-2">
+                        SkinAI <span class="bg-blue-800/80 text-blue-200 text-xs px-2 py-0.5 rounded font-mono font-medium">CNN-ViT v2.4</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">Lesion Evolution & Risk Screening System</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex items-center space-x-1 lg:space-x-2 text-sm font-medium">
+                <button onclick="switchView('home')" id="nav-home" class="nav-btn px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-house mr-1.5 text-blue-400"></i>Home
+                </button>
+                <button onclick="switchView('upload')" id="nav-upload" class="nav-btn px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1.5 text-blue-400"></i>Screening Upload
+                </button>
+                <button onclick="switchView('pipeline')" id="nav-pipeline" class="nav-btn px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-diagram-project mr-1.5 text-blue-400"></i>Architecture
+                </button>
+                <button onclick="switchView('results')" id="nav-results" class="nav-btn px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-chart-pie mr-1.5 text-blue-400"></i>Report & XAI
+                </button>
+            </nav>
+
+            <!-- Action CTA -->
+            <div class="flex items-center space-x-3">
+                <button onclick="switchView('upload')" class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-play"></i>
+                    <span>Start Screening</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- ========================================== -->
+        <!-- VIEW 1: HOME VIEW                          -->
+        <!-- ========================================== -->
+        <section id="view-home" class="view-section space-y-8">
+            <!-- Hero Academic Banner -->
+            <div class="relative rounded-2xl overflow-hidden bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-6 sm:p-10 shadow-xl border border-slate-800">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-blue-400 pointer-events-none">
+                    <i class="fa-solid fa-dna text-[240px]"></i>
+                </div>
+                <div class="relative z-10 max-w-3xl space-y-4">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-semibold uppercase tracking-wider">
+                        <i class="fa-solid fa-graduation-cap"></i> Academic Research Prototype
+                    </div>
+                    <h1 class="font-heading text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight text-white">
+                        AI-Based Skin Cancer Risk Screening with Lesion Evolution
+                    </h1>
+                    <p class="text-blue-200 text-sm sm:text-base font-light leading-relaxed">
+                        A Hybrid CNN–Vision Transformer (ViT) Framework for Automated Lesion Segmentation, Longitudinal Trajectory Analysis, and Explainable Risk Categorization.
+                    </p>
+                    <div class="pt-3 flex flex-wrap items-center gap-3">
+                        <button onclick="switchView('upload')" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-camera font-bold"></i> Begin Screening Analysis
+                        </button>
+                        <button onclick="loadPresetSample(1)" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-5 py-3 rounded-xl transition flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-flask text-blue-400"></i> Load Demo Sample Case
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Abstract & Research Context -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Academic Abstract Card -->
+                <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
+                        <i class="fa-solid fa-file-contract text-blue-600 text-lg"></i>
+                        <h2 class="font-heading font-bold text-slate-900 text-lg">Project Abstract</h2>
+                    </div>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Early detection of malignant cutaneous lesions significantly improves patient prognostic outcomes. Conventional computer-assisted diagnosis relies primarily on single-frame spatial analysis, often ignoring critical temporal dynamics. This research proposes a multi-stage decision-support framework integrating deep local feature extraction via Convolutional Neural Networks (EfficientNet-B4) and long-range contextual spatial attention via Vision Transformers (ViT-Base).
+                    </p>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Furthermore, the system incorporates <strong>TEM-Seg (Task-Guided Efficient Medical Segmentation)</strong> to delineate precise lesion perimeters and utilizes a Siamese spatial registration network for longitudinal comparison. By comparing sequential skin images, the system calculates differential indicators across asymmetric axis shifts, border spiculation, and surface area delta, presenting clinicians with intuitive Grad-CAM heatmaps and ViT self-attention grids.
+                    </p>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                            <div class="text-blue-600 font-bold text-lg font-mono">94.8%</div>
+                            <div class="text-slate-500 text-xs">Sensitivity</div>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                            <div class="text-blue-600 font-bold text-lg font-mono">92.3%</div>
+                            <div class="text-slate-500 text-xs">Specificity</div>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                            <div class="text-blue-600 font-bold text-lg font-mono">0.961</div>
+                            <div class="text-slate-500 text-xs">ROC-AUC Score</div>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                            <div class="text-blue-600 font-bold text-lg font-mono">TEM-Seg</div>
+                            <div class="text-slate-500 text-xs">Perimeter Mask</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Framework Pipeline Summary -->
+                <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-sm border border-slate-800 space-y-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2 border-b border-slate-800 pb-3 mb-4">
+                            <i class="fa-solid fa-layer-group text-blue-400 text-lg"></i>
+                            <h2 class="font-heading font-bold text-white text-lg">Key Modules</h2>
+                        </div>
+                        <ul class="space-y-3 text-xs sm:text-sm">
+                            <li class="flex items-start gap-2.5">
+                                <span class="bg-blue-600/30 text-blue-400 p-1 rounded mt-0.5"><i class="fa-solid fa-network-wired text-xs"></i></span>
+                                <div>
+                                    <strong class="text-slate-200">Dual CNN-ViT Engine:</strong> Extracts fine local textures and global spatial self-attention vectors.
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="bg-blue-600/30 text-blue-400 p-1 rounded mt-0.5"><i class="fa-solid fa-vector-square text-xs"></i></span>
+                                <div>
+                                    <strong class="text-slate-200">TEM-Seg Segmentation:</strong> Generates automated contours for perimeter calculation.
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="bg-blue-600/30 text-blue-400 p-1 rounded mt-0.5"><i class="fa-solid fa-timeline text-xs"></i></span>
+                                <div>
+                                    <strong class="text-slate-200">Longitudinal Tracker:</strong> Siamese alignment to detect area, asymmetry, and border shifts.
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="bg-blue-600/30 text-blue-400 p-1 rounded mt-0.5"><i class="fa-solid fa-eye text-xs"></i></span>
+                                <div>
+                                    <strong class="text-slate-200">Explainable AI (XAI):</strong> Grad-CAM heatmaps & ViT attention patch visualizer.
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="pt-4 border-t border-slate-800">
+                        <button onclick="switchView('upload')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition text-center text-sm flex items-center justify-center gap-2">
+                            <span>Proceed to Screening</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h3 class="font-heading font-bold text-slate-900 text-base mb-2">Non-Invasive Risk Stratification</h3>
+                    <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                        Categorizes lesion risk into Low, Moderate, or High confidence tiers based on ABCDE clinical criteria and deep spatial features.
+                    </p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <h3 class="font-heading font-bold text-slate-900 text-base mb-2">Longitudinal Trajectory Comparison</h3>
+                    <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                        Optional dual-scan input compares current vs. historical lesion photos to quantify progressive growth, border change, and color shifts.
+                    </p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-user-doctor"></i>
+                    </div>
+                    <h3 class="font-heading font-bold text-slate-900 text-base mb-2">Integrated Doctor Teleconsultation</h3>
+                    <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                        Provides immediate links for teleconsultation booking and clinic discovery, explicitly cautioning against unprescribed topical treatments.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: UPLOAD & SCREENING VIEW            -->
+        <!-- ========================================== -->
+        <section id="view-upload" class="view-section space-y-6 hidden">
+            <!-- Section Header -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="font-heading font-bold text-slate-900 text-xl flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up text-blue-600"></i>
+                        Screening Input & Lesion Upload
+                    </h2>
+                    <p class="text-slate-500 text-xs sm:text-sm">Provide current lesion dermoscopy/clinical photograph and optional prior photograph for longitudinal tracking.</p>
+                </div>
+                
+                <!-- Quick Preset Selector -->
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block md:inline w-full md:w-auto">Quick Test Presets:</span>
+                    <button onclick="loadPresetSample(1)" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-vial text-amber-500"></i> Case A (High Risk)
+                    </button>
+                    <button onclick="loadPresetSample(2)" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-vial text-blue-500"></i> Case B (Moderate)
+                    </button>
+                    <button onclick="loadPresetSample(3)" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-vial text-emerald-500"></i> Case C (Benign)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upload Dropzone Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Dropzone 1: Current Lesion (Mandatory) -->
+                <div class="bg-white p-6 rounded-2xl border-2 border-dashed border-slate-300 hover:border-blue-500 transition relative flex flex-col justify-between shadow-sm min-h-[320px]" id="dropzone-current">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold">
+                                <i class="fa-solid fa-asterisk text-[10px]"></i> Current Lesion Image (Required)
+                            </span>
+                            <span class="text-xs text-slate-400" id="current-file-name">JPEG, PNG, WEBP</span>
+                        </div>
+
+                        <!-- Empty State Container -->
+                        <div id="current-empty-state" class="text-center py-8 space-y-3 cursor-pointer" onclick="document.getElementById('file-current').click()">
+                            <div class="w-16 h-16 rounded-full bg-blue-50 text-blue-600 mx-auto flex items-center justify-center text-2xl shadow-inner">
+                                <i class="fa-solid fa-camera"></i>
+                            </div>
+                            <div>
+                                <p class="text-slate-800 font-semibold text-sm">Click to upload or drag & drop</p>
+                                <p class="text-slate-400 text-xs">High-resolution clinical or dermoscopic photograph</p>
+                            </div>
+                        </div>
+
+                        <!-- Preview State Container (Hidden initially) -->
+                        <div id="current-preview-state" class="hidden space-y-3">
+                            <div class="relative rounded-xl overflow-hidden bg-slate-900 h-48 border border-slate-200">
+                                <img id="img-current-preview" src="" alt="Current Lesion Preview" class="w-full h-full object-cover">
+                                <div class="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[11px] px-2 py-1 rounded font-mono">
+                                    Current Scan (2026)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Input -->
+                    <input type="file" id="file-current" accept="image/*" class="hidden" onchange="handleFileSelect(event, 'current')">
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <button onclick="document.getElementById('file-current').click()" class="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                            <i class="fa-solid fa-upload"></i> Choose Image
+                        </button>
+                        <button id="btn-remove-current" onclick="removeImage('current')" class="text-xs text-rose-500 hover:text-rose-700 font-semibold hidden">
+                            <i class="fa-solid fa-trash mr-1"></i> Remove
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dropzone 2: Previous Lesion (Optional) -->
+                <div class="bg-white p-6 rounded-2xl border-2 border-dashed border-slate-300 hover:border-blue-500 transition relative flex flex-col justify-between shadow-sm min-h-[320px]" id="dropzone-previous">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Previous Lesion Image (Optional)
+                            </span>
+                            <span class="text-xs text-slate-400" id="previous-file-name">Longitudinal Tracker</span>
+                        </div>
+
+                        <!-- Empty State Container -->
+                        <div id="previous-empty-state" class="text-center py-8 space-y-3 cursor-pointer" onclick="document.getElementById('file-previous').click()">
+                            <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-500 mx-auto flex items-center justify-center text-2xl shadow-inner">
+                                <i class="fa-solid fa-images"></i>
+                            </div>
+                            <div>
+                                <p class="text-slate-800 font-semibold text-sm">Click to upload baseline photograph</p>
+                                <p class="text-slate-400 text-xs">Allows CNN-ViT Siamese trajectory comparison</p>
+                            </div>
+                        </div>
+
+                        <!-- Preview State Container (Hidden initially) -->
+                        <div id="previous-preview-state" class="hidden space-y-3">
+                            <div class="relative rounded-xl overflow-hidden bg-slate-900 h-48 border border-slate-200">
+                                <img id="img-previous-preview" src="" alt="Previous Lesion Preview" class="w-full h-full object-cover">
+                                <div class="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[11px] px-2 py-1 rounded font-mono">
+                                    Baseline Scan (6 Months Prior)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Input -->
+                    <input type="file" id="file-previous" accept="image/*" class="hidden" onchange="handleFileSelect(event, 'previous')">
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <button onclick="document.getElementById('file-previous').click()" class="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                            <i class="fa-solid fa-upload"></i> Choose Baseline
+                        </button>
+                        <button id="btn-remove-previous" onclick="removeImage('previous')" class="text-xs text-rose-500 hover:text-rose-700 font-semibold hidden">
+                            <i class="fa-solid fa-trash mr-1"></i> Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Non-PII Metadata Form (Strictly No Names / Passwords / Phone numbers) -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
+                    <i class="fa-solid fa-clipboard-list text-blue-600"></i>
+                    <h3 class="font-heading font-bold text-slate-900 text-base">Clinical Context Metadata (Non-PII)</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs sm:text-sm">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Anatomical Site</label>
+                        <select id="meta-site" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="Trunk / Back">Trunk / Back</option>
+                            <option value="Upper Extremity (Arms)">Upper Extremity (Arms)</option>
+                            <option value="Lower Extremity (Legs)">Lower Extremity (Legs)</option>
+                            <option value="Head / Neck">Head / Neck</option>
+                            <option value="Acral (Hands / Feet)">Acral (Hands / Feet)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Patient Observed Changes</label>
+                        <select id="meta-changes" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="Recent Expansion & Border Change">Recent Expansion & Border Change</option>
+                            <option value="Color Darkening / Variegation">Color Darkening / Variegation</option>
+                            <option value="Sensation (Itching / Tenderness)">Sensation (Itching / Tenderness)</option>
+                            <option value="Stable / No Visible Change">Stable / No Visible Change</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Evolution Duration</label>
+                        <select id="meta-duration" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="1 to 3 Months">1 to 3 Months</option>
+                            <option value="3 to 6 Months">3 to 6 Months</option>
+                            <option value="Greater than 6 Months">Greater than 6 Months</option>
+                            <option value="Unknown / Baseline Scan">Unknown / Baseline Scan</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analyze CTA Button -->
+            <div class="flex items-center justify-end pt-2">
+                <button onclick="startAnalysisPipeline()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold text-base px-8 py-3.5 rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-microscope text-lg"></i>
+                    <span>Execute CNN–ViT Risk Analysis</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: ANALYSIS PIPELINE VIEW (SIMULATED)  -->
+        <!-- ========================================== -->
+        <section id="view-pipeline" class="view-section space-y-6 hidden">
+            <div class="max-w-3xl mx-auto bg-slate-900 text-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-800 space-y-8">
+                <!-- Scanner Animation Graphic -->
+                <div class="text-center space-y-4">
+                    <div class="relative w-36 h-36 mx-auto rounded-full bg-slate-800 border-4 border-blue-500/40 p-2 flex items-center justify-center overflow-hidden shadow-2xl">
+                        <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center relative overflow-hidden">
+                            <!-- Lesion background icon -->
+                            <i class="fa-solid fa-disease text-5xl text-blue-500/40"></i>
+                            <!-- Scanning beam animation -->
+                            <div class="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent scan-line-anim"></div>
+                            <div class="absolute inset-0 border-2 border-blue-400 rounded-full pulse-ring-anim"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="font-heading font-extrabold text-xl sm:text-2xl text-white">Multimodal Deep Learning Pipeline</h2>
+                        <p class="text-blue-300 text-xs sm:text-sm font-mono mt-1" id="pipeline-status-text">Initializing CUDA Tensors & Model Weights...</p>
+                    </div>
+                </div>
+
+                <!-- Global Progress Bar -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs font-mono text-slate-400">
+                        <span>Pipeline Execution Progress</span>
+                        <span id="pipeline-percentage">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden p-0.5 border border-slate-700">
+                        <div id="pipeline-progress-bar" class="bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-400 h-full rounded-full transition-all duration-300 w-0"></div>
+                    </div>
+                </div>
+
+                <!-- Stage Checkmarks List -->
+                <div class="space-y-3 bg-slate-950/60 p-5 rounded-2xl border border-slate-800/80 font-mono text-xs sm:text-sm">
+                    <div id="stage-1" class="flex items-center justify-between p-2.5 rounded-xl text-slate-500 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="stage-icon w-6 h-6 rounded-full border border-slate-600 flex items-center justify-center text-xs"><i class="fa-solid fa-circle-notch animate-spin opacity-0"></i></span>
+                            <span>1. Dull-Razor Preprocessing & 224x224 Tensor Rescaling</span>
+                        </div>
+                        <span class="stage-status text-xs">Waiting...</span>
+                    </div>
+
+                    <div id="stage-2" class="flex items-center justify-between p-2.5 rounded-xl text-slate-500 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="stage-icon w-6 h-6 rounded-full border border-slate-600 flex items-center justify-center text-xs"><i class="fa-solid fa-circle-notch animate-spin opacity-0"></i></span>
+                            <span>2. CNN (EfficientNet-B4) + ViT-Base Feature Tokenization</span>
+                        </div>
+                        <span class="stage-status text-xs">Waiting...</span>
+                    </div>
+
+                    <div id="stage-3" class="flex items-center justify-between p-2.5 rounded-xl text-slate-500 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="stage-icon w-6 h-6 rounded-full border border-slate-600 flex items-center justify-center text-xs"><i class="fa-solid fa-circle-notch animate-spin opacity-0"></i></span>
+                            <span>3. TEM-Seg Perimeter Segmentation Masking</span>
+                        </div>
+                        <span class="stage-status text-xs">Waiting...</span>
+                    </div>
+
+                    <div id="stage-4" class="flex items-center justify-between p-2.5 rounded-xl text-slate-500 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="stage-icon w-6 h-6 rounded-full border border-slate-600 flex items-center justify-center text-xs"><i class="fa-solid fa-circle-notch animate-spin opacity-0"></i></span>
+                            <span>4. Siamese Longitudinal Evolution Delta Math</span>
+                        </div>
+                        <span class="stage-status text-xs">Waiting...</span>
+                    </div>
+
+                    <div id="stage-5" class="flex items-center justify-between p-2.5 rounded-xl text-slate-500 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="stage-icon w-6 h-6 rounded-full border border-slate-600 flex items-center justify-center text-xs"><i class="fa-solid fa-circle-notch animate-spin opacity-0"></i></span>
+                            <span>5. Risk Matrix Ensemble & Grad-CAM / ViT XAI Generation</span>
+                        </div>
+                        <span class="stage-status text-xs">Waiting...</span>
+                    </div>
+                </div>
+
+                <div class="text-center pt-2">
+                    <button onclick="skipPipelineToResults()" class="text-xs text-slate-400 hover:text-white underline">Skip animation directly to Results</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 4: RESULTS & REPORT VIEW             -->
+        <!-- ========================================== -->
+        <section id="view-results" class="view-section space-y-6 hidden">
+            <!-- Action Toolbar (No Print class hidden when printing) -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 no-print">
+                <div class="flex items-center space-x-3">
+                    <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold font-mono">
+                        CASE REPORT #SK-2026-8941
+                    </span>
+                    <span class="text-xs text-slate-500" id="report-timestamp">Generated: Oct 4, 2026</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i> Download / Print PDF
+                    </button>
+                    <button onclick="switchView('upload')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> Screen New Lesion
+                    </button>
+                </div>
+            </div>
+
+            <!-- Printable Header Title (Visible in print mode) -->
+            <div class="hidden print-only mb-6 border-b border-slate-300 pb-4">
+                <h1 class="text-2xl font-bold text-slate-900">SkinAI Framework - Clinical Decision Support Report</h1>
+                <p class="text-xs text-slate-600">AI-Based Skin Cancer Risk Screening with Lesion Evolution (CNN–Vision Transformer)</p>
+                <div class="mt-2 text-xs font-mono text-slate-500">Document Reference: #SK-2026-8941 | Date: October 4, 2026</div>
+            </div>
+
+            <!-- GRID SECTION: RISK CARD & TELEMEDICINE WARNING -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- RISK CARD (2 COLS) -->
+                <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-shield-cat text-blue-600 text-xl"></i>
+                            <h2 class="font-heading font-bold text-slate-900 text-lg">Screening Risk Assessment</h2>
+                        </div>
+                        <span id="risk-badge-header" class="px-3.5 py-1 rounded-full text-xs font-bold font-mono bg-amber-100 text-amber-800 border border-amber-300">
+                            MODERATE RISK
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                        <!-- Simulated Gauge Meter -->
+                        <div class="text-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Ensemble Confidence</div>
+                            <div class="text-3xl font-extrabold font-mono text-slate-900" id="res-confidence">68.4%</div>
+                            <div class="text-xs text-slate-500 mt-1">Calibrated Softmax</div>
+                        </div>
+                        <div class="sm:col-span-2 space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="text-slate-700">Malignant Melanoma Risk Index</span>
+                                    <span class="text-amber-600 font-mono" id="val-melanoma">68.4%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                                    <div id="bar-melanoma" class="bg-amber-500 h-full rounded-full w-[68.4%]"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="text-slate-700">Dysplastic Nevus Probability</span>
+                                    <span class="text-blue-600 font-mono" id="val-nevus">24.1%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                                    <div id="bar-nevus" class="bg-blue-500 h-full rounded-full w-[24.1%]"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="text-slate-700">Benign Seborrheic / Normal</span>
+                                    <span class="text-emerald-600 font-mono" id="val-benign">7.5%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                                    <div id="bar-benign" class="bg-emerald-500 h-full rounded-full w-[7.5%]"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Model Weight Breakdown -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 text-xs space-y-2">
+                        <div class="font-bold text-slate-800 flex items-center justify-between">
+                            <span><i class="fa-solid fa-code-branch text-blue-600 mr-1.5"></i> Model Decision Vectors</span>
+                            <span class="text-slate-400 font-mono">CNN: 45% | ViT: 35% | Evolution: 20%</span>
+                        </div>
+                        <p class="text-slate-600 leading-relaxed" id="res-description">
+                            CNN detects irregular pigment reticulation; Vision Transformer registers focal patch self-attention anomaly along the upper perimeter margin. Siamese alignment confirms notable 6-month growth trajectory.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- TELEMEDICINE & NEXT STEPS CARD ("Meet the Doctor") -->
+                <div class="bg-gradient-to-br from-slate-900 to-blue-950 text-white rounded-2xl p-6 shadow-sm border border-slate-800 space-y-5 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+                            <i class="fa-solid fa-user-doctor text-blue-400 text-xl"></i>
+                            <h3 class="font-heading font-bold text-white text-lg">Next Clinical Steps</h3>
+                        </div>
+
+                        <!-- STRICT WARNING BOX -->
+                        <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs leading-relaxed space-y-1">
+                            <div class="font-bold text-amber-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-hand-holding-medical"></i> Clinical Safety Directive
+                            </div>
+                            <p>
+                                <strong>DO NOT</strong> apply unprescribed creams, ointments, or attempt home remedies on suspicious skin lesions. Consult a certified dermatologist immediately for dermoscopic biopsy evaluation.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="space-y-3 pt-2">
+                        <button onclick="openTeleconsultModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30">
+                            <i class="fa-solid fa-video"></i>
+                            <span>Schedule Video Teleconsultation</span>
+                        </button>
+                        <button onclick="openClinicsModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold py-3 rounded-xl transition text-xs sm:text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-hospital-user text-blue-400"></i>
+                            <span>Find Nearby Accredited Clinics</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LONGITUDINAL EVOLUTION PANEL -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 gap-2">
+                    <div>
+                        <h3 class="font-heading font-bold text-slate-900 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-timeline text-blue-600"></i>
+                            Longitudinal Lesion Trajectory & Evolution Panel
+                        </h3>
+                        <p class="text-slate-500 text-xs">Siamese spatial alignment comparing historical baseline vs. current scan.</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-mono font-semibold">
+                        Delta Interval: ~6 Months
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Images Visual Comparison -->
+                    <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                        <div class="space-y-1.5">
+                            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Baseline Scan (Prior)</div>
+                            <div class="relative rounded-xl overflow-hidden bg-slate-900 h-44 sm:h-52 border border-slate-200">
+                                <img id="res-img-previous" src="" alt="Previous Lesion" class="w-full h-full object-cover">
+                                <div class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] px-2 py-0.5 rounded font-mono">T0</div>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Current Scan (Present)</div>
+                            <div class="relative rounded-xl overflow-hidden bg-slate-900 h-44 sm:h-52 border border-slate-200">
+                                <img id="res-img-current" src="" alt="Current Lesion" class="w-full h-full object-cover">
+                                <div class="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded font-mono">T1 (Current)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Differential Evolution Metrics Table -->
+                    <div class="space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <h4 class="font-bold text-slate-800 text-sm flex items-center justify-between">
+                                <span>Quantitative Evolution Parameters</span>
+                                <span class="text-xs text-blue-600 font-normal">TEM-Seg Derived</span>
+                            </h4>
+
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="text-slate-500 mb-1">Surface Area Growth</div>
+                                    <div class="text-base font-extrabold font-mono text-amber-600" id="evo-area">+14.2% Expansion</div>
+                                    <div class="text-[10px] text-slate-400">24.5 mm² → 28.0 mm²</div>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="text-slate-500 mb-1">Border Irregularity</div>
+                                    <div class="text-base font-extrabold font-mono text-amber-600" id="evo-border">+0.18 Spiculation</div>
+                                    <div class="text-[10px] text-slate-400">Increased Notch Count</div>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="text-slate-500 mb-1">Asymmetry Index</div>
+                                    <div class="text-base font-extrabold font-mono text-amber-600" id="evo-asymmetry">+0.22 Axis Shift</div>
+                                    <div class="text-[10px] text-slate-400">Biaxial Differential</div>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="text-slate-500 mb-1">Color Variegation</div>
+                                    <div class="text-base font-extrabold font-mono text-amber-600" id="evo-color">Heterogeneous</div>
+                                    <div class="text-[10px] text-slate-400">Dark Tan & Brown Shift</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-900 text-xs leading-relaxed">
+                            <i class="fa-solid fa-circle-info mr-1 text-blue-600"></i>
+                            <strong>Clinical Significance:</strong> An evolution trajectory demonstrating area growth exceeding 10% over 6 months combined with border irregularity escalation triggers elevated screening priority.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXPLAINABLE AI (XAI) HEATMAP PANEL -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div>
+                        <h3 class="font-heading font-bold text-slate-900 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-eye text-blue-600"></i>
+                            Explainable AI (XAI) Model Interpretation Maps
+                        </h3>
+                        <p class="text-slate-500 text-xs">Visualizing Grad-CAM feature activations & Vision Transformer multi-head self-attention patches.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Grad-CAM Card -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-800 text-xs uppercase tracking-wider">
+                                <i class="fa-solid fa-fire text-rose-500 mr-1"></i> Grad-CAM Heatmap (CNN)
+                            </span>
+                            <span class="text-[11px] text-slate-500 font-mono">Conv Layer 4 Activation</span>
+                        </div>
+                        <div class="relative rounded-xl overflow-hidden bg-slate-900 h-56 border border-slate-300">
+                            <!-- Canvas for Grad-CAM overlay -->
+                            <canvas id="canvas-gradcam" class="w-full h-full object-cover"></canvas>
+                            <div class="absolute bottom-2 right-2 bg-slate-900/80 text-white text-[10px] px-2 py-1 rounded font-mono">
+                                Edge Salience: High
+                            </div>
+                        </div>
+                        <p class="text-slate-600 text-xs">
+                            Highlights pixel regions driving Convolutional Neural Network activation. Warm red regions indicate high salience along lesion margins.
+                        </p>
+                    </div>
+
+                    <!-- ViT Attention Map Card -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-800 text-xs uppercase tracking-wider">
+                                <i class="fa-solid fa-border-all text-indigo-600 mr-1"></i> ViT Patch Attention Grid
+                            </span>
+                            <span class="text-[11px] text-slate-500 font-mono">Multi-Head Self-Attention</span>
+                        </div>
+                        <div class="relative rounded-xl overflow-hidden bg-slate-900 h-56 border border-slate-300">
+                            <!-- Canvas for ViT Attention overlay -->
+                            <canvas id="canvas-vit" class="w-full h-full object-cover"></canvas>
+                            <div class="absolute bottom-2 right-2 bg-slate-900/80 text-white text-[10px] px-2 py-1 rounded font-mono">
+                                Attention Tokens: 8x8 Grid
+                            </div>
+                        </div>
+                        <p class="text-slate-600 text-xs">
+                            Displays Transformer patch self-attention weights. Highlighted grid squares demonstrate long-range spatial context modeling across atypical pigment reticulation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-8 border-t border-slate-800 mt-12 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4 text-center">
+            <div class="flex items-center justify-center space-x-2 text-white font-heading font-bold text-base">
+                <i class="fa-solid fa-microscope text-blue-500"></i>
+                <span>SkinAI Vision Framework</span>
+            </div>
+            <p class="max-w-2xl mx-auto leading-relaxed text-slate-400">
+                Developed as a Decision-Support Prototype for Academic Research: <em>"AI-Based Skin Cancer Risk Screening with Lesion Evolution: A CNN–Vision Transformer Framework."</em>
+            </p>
+            <div class="text-slate-500 pt-2 border-t border-slate-800 text-[11px]">
+                Disclaimer: For research evaluation only. No PII stored. Always consult a certified medical professional for diagnosis.
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================== -->
+    <!-- MODAL 1: TELECONSULTATION BOOKING          -->
+    <!-- ========================================== -->
+    <div id="modal-teleconsult" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 relative border border-slate-100">
+            <button onclick="closeTeleconsultModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-video"></i>
+                </div>
+                <div>
+                    <h3 class="font-heading font-bold text-slate-900 text-lg">Schedule Teleconsultation</h3>
+                    <p class="text-xs text-slate-500">Connect with an accredited dermatologist</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Select Specialist</label>
+                    <select class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+                        <option>Dr. Ananya Sharma, MD (Dermatopathology)</option>
+                        <option>Dr. K. R. Venkatesh, MD (Cutaneous AI Oncology)</option>
+                        <option>Dr. Rajesh Verma, MD (Dermatology Specialist)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Preferred Time Slot</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" class="p-2 border rounded-xl border-blue-600 bg-blue-50 font-medium text-blue-700 text-center">Today, 4:30 PM</button>
+                        <button type="button" class="p-2 border rounded-xl border-slate-200 text-slate-700 text-center hover:bg-slate-50">Tomorrow, 10:00 AM</button>
+                    </div>
+                </div>
+                <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1"></i>
+                    Please have your generated screening PDF report ready to share during the video call.
+                </div>
+            </div>
+
+            <button onclick="confirmTeleconsult()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
+                <span>Confirm Video Request</span>
+                <i class="fa-solid fa-check"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 2: NEARBY CLINICS FINDER             -->
+    <!-- ========================================== -->
+    <div id="modal-clinics" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeClinicsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-hospital-user"></i>
+                </div>
+                <div>
+                    <h3 class="font-heading font-bold text-slate-900 text-lg">Accredited Dermatology Centers</h3>
+                    <p class="text-xs text-slate-500">Nearest certified clinical diagnostic facilities</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <!-- Clinic Item 1 -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">City Dermatology & Cutaneous Care Center</h4>
+                            <p class="text-xs text-slate-500"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i> 14 Academic Health Hub, Main Ring Road (1.8 km)</p>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">Open Today</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
+                        <span class="text-slate-600 font-mono"><i class="fa-solid fa-phone text-blue-600 mr-1"></i> +91 (044) 2845-9012</span>
+                        <button onclick="alert('Appointment request submitted for City Dermatology Center!')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium transition">Book In-Person</button>
+                    </div>
+                </div>
+
+                <!-- Clinic Item 2 -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Apollo Cutaneous Oncology & Dermoscopy Lab</h4>
+                            <p class="text-xs text-slate-500"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i> 88 Medical Campus Avenue (3.4 km)</p>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">Open Today</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
+                        <span class="text-slate-600 font-mono"><i class="fa-solid fa-phone text-blue-600 mr-1"></i> +91 (044) 4920-3344</span>
+                        <button onclick="alert('Appointment request submitted for Apollo Cutaneous Lab!')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium transition">Book In-Person</button>
+                    </div>
+                </div>
+
+                <!-- Clinic Item 3 -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Regional University Dermatopathology Clinic</h4>
+                            <p class="text-xs text-slate-500"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i> College Hospital Complex, Block C (5.1 km)</p>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[11px] font-bold">Appointments Only</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
+                        <span class="text-slate-600 font-mono"><i class="fa-solid fa-phone text-blue-600 mr-1"></i> +91 (044) 2250-7711</span>
+                        <button onclick="alert('Appointment request submitted for Regional Clinic!')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium transition">Book In-Person</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 5. FLOATING MULTILINGUAL AI CHATBOT        -->
+    <!-- ========================================== -->
+    <div id="floating-chatbot-container" class="fixed bottom-5 right-5 z-50 no-print">
+        <!-- Floating Trigger Button -->
+        <button id="chatbot-toggle-btn" onclick="toggleChatbot()" class="bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-all duration-300 transform hover:scale-105 relative group">
+            <i class="fa-solid fa-comments"></i>
+            <span class="absolute -top-1 -right-1 bg-amber-400 w-4 h-4 rounded-full border-2 border-white animate-ping"></span>
+            <span class="absolute -top-1 -right-1 bg-amber-400 w-4 h-4 rounded-full border-2 border-white"></span>
+        </button>
+
+        <!-- Chat Window Drawer -->
+        <div id="chatbot-drawer" class="hidden absolute bottom-16 right-0 w-[90vw] sm:w-[380px] bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[520px] transition-all duration-300">
+            <!-- Header -->
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-heading font-bold text-sm leading-tight">Health Support AI</h4>
+                        <span class="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Multilingual Active
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <!-- Language Selector Dropdown -->
+                    <select id="chat-language" onchange="changeChatLanguage()" class="bg-slate-800 text-white text-xs rounded-lg px-2 py-1 border border-slate-700 focus:outline-none font-medium">
+                        <option value="en">English</option>
+                        <option value="ta">Tamil (தமிழ்)</option>
+                        <option value="te">Telugu (తెలుగు)</option>
+                        <option value="hi">Hindi (हिंदी)</option>
+                    </select>
+
+                    <button onclick="toggleChatbot()" class="text-slate-400 hover:text-white p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Messages Log -->
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs">
+                <!-- Initial Welcome Message injected via JS -->
+            </div>
+
+            <!-- Quick Action Chips -->
+            <div class="p-2 bg-white border-t border-slate-100 flex flex-wrap gap-1.5 overflow-x-auto text-[11px]">
+                <button onclick="sendQuickPrompt('What does Moderate Risk mean?')" class="bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 px-2.5 py-1 rounded-full border border-slate-200 transition">
+                    Risk Meaning?
+                </button>
+                <button onclick="sendQuickPrompt('Should I see a doctor right away?')" class="bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 px-2.5 py-1 rounded-full border border-slate-200 transition">
+                    See Doctor?
+                </button>
+                <button onclick="sendQuickPrompt('How does evolution tracking work?')" class="bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 px-2.5 py-1 rounded-full border border-slate-200 transition">
+                    Evolution?
+                </button>
+            </div>
+
+            <!-- Chat Input Area -->
+            <div class="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
+                <button id="btn-voice-input" onclick="toggleVoiceInput()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 flex items-center justify-center transition shrink-0" title="Voice Input (Microphone)">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+                
+                <input type="text" id="chat-input" placeholder="Type or speak message..." onkeypress="handleChatKeyPress(event)" class="flex-1 bg-slate-100 text-slate-800 text-xs rounded-full px-4 py-2 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                <button onclick="sendChatMessage()" class="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition shrink-0 shadow-md">
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT APP LOGIC                       -->
+    <!-- ========================================== -->
+    <script>
+        // Global Configuration & State Store
+        const CONFIG = {
+            API_URL: window.ENV_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8080' : '')
+        };
+
+        const state = {
+            currentView: 'home',
+            uploadedCurrent: null,
+            uploadedPrevious: null,
+            currentSampleId: 1,
+            pipelineRunning: false,
+            chatLanguage: 'en',
+            isListening: false
+        };
+
+        // Preset Sample Data (Synthetic Canvas-Generated Lesions)
+        const sampleCases = {
+            1: {
+                title: "High Risk Melanoma Trajectory",
+                confidence: 84.6,
+                badgeText: "HIGH RISK",
+                badgeClass: "bg-rose-100 text-rose-800 border-rose-300",
+                melanoma: 84.6,
+                nevus: 11.2,
+                benign: 4.2,
+                description: "Siamese alignment confirms rapid 6-month area expansion (+21.4%). ViT attention maps demonstrate focal patch concentration along irregular upper-right margin spiculation.",
+                evoArea: "+21.4% Expansion",
+                evoBorder: "+0.34 Spiculation",
+                evoAsymmetry: "+0.41 Axis Shift",
+                evoColor: "Dark Brown & Black Shift",
+                colorPattern: "high"
+            },
+            2: {
+                title: "Moderate Risk Dysplastic Nevus",
+                confidence: 68.4,
+                badgeText: "MODERATE RISK",
+                badgeClass: "bg-amber-100 text-amber-800 border-amber-300",
+                melanoma: 68.4,
+                nevus: 24.1,
+                benign: 7.5,
+                description: "CNN detects mild pigment reticulation. Vision Transformer registers moderate spatial self-attention variance across central region with subtle border notch.",
+                evoArea: "+14.2% Expansion",
+                evoBorder: "+0.18 Spiculation",
+                evoAsymmetry: "+0.22 Axis Shift",
+                evoColor: "Heterogeneous Tan",
+                colorPattern: "moderate"
+            },
+            3: {
+                title: "Low Risk Benign Keratosis",
+                confidence: 91.2,
+                badgeText: "LOW RISK (BENIGN)",
+                badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-300",
+                melanoma: 3.1,
+                nevus: 5.7,
+                benign: 91.2,
+                description: "Uniform border perimeter and symmetric spatial distribution. Longitudinal analysis confirms stable surface area delta (< 1.5%) across historical scan.",
+                evoArea: "+0.8% (Stable)",
+                evoBorder: "Symmetric / Smooth",
+                evoAsymmetry: "0.02 (Minimal)",
+                evoColor: "Uniform Light Brown",
+                colorPattern: "low"
+            }
+        };
+
+        // Initial Load Routine
+        window.addEventListener('DOMContentLoaded', () => {
+            generateSyntheticLesionImages();
+            loadPresetSample(1);
+            initChatbotGreeting();
+        });
+
+        // VIEW SWITCHER LOGIC
+        function switchView(viewId) {
+            state.currentView = viewId;
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`view-${viewId}`);
+            if (target) {
+                target.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            
+            // Update Navigation Button States
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'text-white');
+                btn.classList.add('text-slate-300');
+            });
+            const activeNav = document.getElementById(`nav-${viewId}`);
+            if (activeNav) {
+                activeNav.classList.add('bg-slate-800', 'text-white');
+            }
+
+            // Render Heatmaps if entering results view
+            if (viewId === 'results') {
+                setTimeout(drawXAIHeatmaps, 100);
+            }
+        }
+
+        // GENERATE SYNTHETIC LESION PREVIEW CANVASES
+        function generateSyntheticLesionImages() {
+            // We create SVG Data URIs for realistic lesion mockups
+            const generateLesionSVG = (type, seed) => {
+                const colorMap = {
+                    high: { bg: '#e2d4c9', core: '#2a1a14', rim: '#8b4513', highlight: '#dc2626' },
+                    moderate: { bg: '#eddcd2', core: '#4a2c20', rim: '#a0522d', highlight: '#f59e0b' },
+                    low: { bg: '#f5ebe0', core: '#7f5539', rim: '#b08968', highlight: '#10b981' }
+                };
+                const colors = colorMap[type] || colorMap.moderate;
+                const path = type === 'high' 
+                    ? "M 100,50 Q 140,40 160,80 T 170,140 Q 130,170 80,150 T 40,90 Q 60,50 100,50 Z"
+                    : "M 100,50 Q 150,55 155,100 T 145,155 Q 95,160 50,145 T 45,95 Q 50,45 100,50 Z";
+
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 200 200">
+                    <rect width="200" height="200" fill="${colors.bg}"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="#d6ccc2" stroke-width="2" stroke-dasharray="4 4"/>
+                    <!-- Dermoscopy Hair Artifacts -->
+                    <line x1="30" y1="20" x2="170" y2="180" stroke="#333" stroke-width="0.7" opacity="0.2"/>
+                    <line x1="160" y1="30" x2="40" y2="160" stroke="#333" stroke-width="0.7" opacity="0.2"/>
+                    <!-- Lesion Core -->
+                    <path d="${path}" fill="${colors.core}" opacity="0.9" />
+                    <path d="${path}" fill="${colors.rim}" opacity="0.6" transform="scale(0.85) translate(15, 15)" />
+                    <circle cx="110" cy="95" r="12" fill="${colors.highlight}" opacity="0.4" />
+                </svg>`;
+                return 'data:image/svg+xml;base64,' + btoa(svg);
+            };
+
+            state.sampleImages = {
+                1: {
+                    current: generateLesionSVG('high', 1),
+                    previous: generateLesionSVG('moderate', 1)
+                },
+                2: {
+                    current: generateLesionSVG('moderate', 2),
+                    previous: generateLesionSVG('moderate', 2)
+                },
+                3: {
+                    current: generateLesionSVG('low', 3),
+                    previous: generateLesionSVG('low', 3)
+                }
+            };
+        }
+
+        // LOAD PRESET SAMPLE DATA
+        function loadPresetSample(sampleId) {
+            state.currentSampleId = sampleId;
+            const data = sampleCases[sampleId];
+            const imgs = state.sampleImages[sampleId];
+
+            state.uploadedCurrent = imgs.current;
+            state.uploadedPrevious = imgs.previous;
+
+            // Update Upload View Previews
+            document.getElementById('img-current-preview').src = imgs.current;
+            document.getElementById('current-empty-state').classList.add('hidden');
+            document.getElementById('current-preview-state').classList.remove('hidden');
+            document.getElementById('btn-remove-current').classList.remove('hidden');
+            document.getElementById('current-file-name').innerText = `Preset Case ${sampleId} (Active)`;
+
+            document.getElementById('img-previous-preview').src = imgs.previous;
+            document.getElementById('previous-empty-state').classList.add('hidden');
+            document.getElementById('previous-preview-state').classList.remove('hidden');
+            document.getElementById('btn-remove-previous').classList.remove('hidden');
+            document.getElementById('previous-file-name').innerText = `Baseline Scan ${sampleId}`;
+
+            // Update Results View Elements
+            document.getElementById('res-img-current').src = imgs.current;
+            document.getElementById('res-img-previous').src = imgs.previous;
+
+            document.getElementById('risk-badge-header').innerText = data.badgeText;
+            document.getElementById('risk-badge-header').className = `px-3.5 py-1 rounded-full text-xs font-bold font-mono border ${data.badgeClass}`;
+
+            document.getElementById('res-confidence').innerText = `${data.confidence}%`;
+            document.getElementById('val-melanoma').innerText = `${data.melanoma}%`;
+            document.getElementById('bar-melanoma').style.width = `${data.melanoma}%`;
+            document.getElementById('val-nevus').innerText = `${data.nevus}%`;
+            document.getElementById('bar-nevus').style.width = `${data.nevus}%`;
+            document.getElementById('val-benign').innerText = `${data.benign}%`;
+            document.getElementById('bar-benign').style.width = `${data.benign}%`;
+
+            document.getElementById('res-description').innerText = data.description;
+            document.getElementById('evo-area').innerText = data.evoArea;
+            document.getElementById('evo-border').innerText = data.evoBorder;
+            document.getElementById('evo-asymmetry').innerText = data.evoAsymmetry;
+            document.getElementById('evo-color').innerText = data.evoColor;
+        }
+
+        // HANDLE FILE UPLOAD
+        function handleFileSelect(event, type) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imgUrl = e.target.result;
+                if (type === 'current') {
+                    state.uploadedCurrent = imgUrl;
+                    document.getElementById('img-current-preview').src = imgUrl;
+                    document.getElementById('res-img-current').src = imgUrl;
+                    document.getElementById('current-empty-state').classList.add('hidden');
+                    document.getElementById('current-preview-state').classList.remove('hidden');
+                    document.getElementById('btn-remove-current').classList.remove('hidden');
+                    document.getElementById('current-file-name').innerText = file.name;
+                } else {
+                    state.uploadedPrevious = imgUrl;
+                    document.getElementById('img-previous-preview').src = imgUrl;
+                    document.getElementById('res-img-previous').src = imgUrl;
+                    document.getElementById('previous-empty-state').classList.add('hidden');
+                    document.getElementById('previous-preview-state').classList.remove('hidden');
+                    document.getElementById('btn-remove-previous').classList.remove('hidden');
+                    document.getElementById('previous-file-name').innerText = file.name;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage(type) {
+            if (type === 'current') {
+                state.uploadedCurrent = null;
+                document.getElementById('current-empty-state').classList.remove('hidden');
+                document.getElementById('current-preview-state').classList.add('hidden');
+                document.getElementById('btn-remove-current').classList.add('hidden');
+                document.getElementById('current-file-name').innerText = 'JPEG, PNG, WEBP';
+            } else {
+                state.uploadedPrevious = null;
+                document.getElementById('previous-empty-state').classList.remove('hidden');
+                document.getElementById('previous-preview-state').classList.add('hidden');
+                document.getElementById('btn-remove-previous').classList.add('hidden');
+                document.getElementById('previous-file-name').innerText = 'Longitudinal Tracker';
+            }
+        }
+
+        // EXECUTE ANIMATED PIPELINE
+        function startAnalysisPipeline() {
+            if (!state.uploadedCurrent) {
+                alert('Please upload or select a Current Lesion Image before starting analysis.');
+                return;
+            }
+
+            switchView('pipeline');
+            state.pipelineRunning = true;
+
+            const progressBar = document.getElementById('pipeline-progress-bar');
+            const progressPercent = document.getElementById('pipeline-percentage');
+            const statusText = document.getElementById('pipeline-status-text');
+
+            const stages = [
+                { id: 'stage-1', text: 'Executing Dull-Razor Hair Removal & 224x224 Tensor Rescaling...', time: 500 },
+                { id: 'stage-2', text: 'Extracting EfficientNet-B4 CNN Features & ViT Patch Tokens...', time: 1100 },
+                { id: 'stage-3', text: 'Delineating TEM-Seg Perimeter Segmentation Mask...', time: 1700 },
+                { id: 'stage-4', text: 'Performing Siamese Longitudinal Affine Registration & Delta Math...', time: 2300 },
+                { id: 'stage-5', text: 'Synthesizing Grad-CAM Heatmaps & Vision Transformer Attention...', time: 2800 }
+            ];
+
+            // Reset stage visuals
+            for (let i = 1; i <= 5; i++) {
+                const el = document.getElementById(`stage-${i}`);
+                el.className = 'flex items-center justify-between p-2.5 rounded-xl text-slate-500 transition';
+                el.querySelector('.stage-status').innerText = 'Waiting...';
+                el.querySelector('.stage-icon i').className = 'fa-solid fa-circle-notch animate-spin opacity-0';
+            }
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                if (progress > 100) progress = 100;
+                progressBar.style.width = `${progress}%`;
+                progressPercent.innerText = `${progress}%`;
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        if (state.pipelineRunning) {
+                            switchView('results');
+                        }
+                    }, 400);
+                }
+            }, 30);
+
+            stages.forEach(st => {
+                setTimeout(() => {
+                    if (!state.pipelineRunning) return;
+                    statusText.innerText = st.text;
+                    const el = document.getElementById(st.id);
+                    el.className = 'flex items-center justify-between p-2.5 rounded-xl bg-blue-900/40 text-blue-200 border border-blue-700/50 transition';
+                    el.querySelector('.stage-status').innerText = 'Processing...';
+                    el.querySelector('.stage-icon i').className = 'fa-solid fa-circle-notch animate-spin text-blue-400';
+                }, st.time);
+
+                setTimeout(() => {
+                    if (!state.pipelineRunning) return;
+                    const el = document.getElementById(st.id);
+                    el.className = 'flex items-center justify-between p-2.5 rounded-xl bg-emerald-950/40 text-emerald-300 border border-emerald-800/50 transition';
+                    el.querySelector('.stage-status').innerText = 'Completed';
+                    el.querySelector('.stage-icon i').className = 'fa-solid fa-check text-emerald-400';
+                }, st.time + 450);
+            });
+        }
+
+        function skipPipelineToResults() {
+            state.pipelineRunning = false;
+            switchView('results');
+        }
+
+        // DRAW XAI GRAD-CAM AND ViT ATTENTION MAPS ON CANVAS
+        function drawXAIHeatmaps() {
+            const currentImgSrc = state.uploadedCurrent || state.sampleImages[1].current;
+            const img = new Image();
+            img.src = currentImgSrc;
+            img.onload = function() {
+                // 1. Draw Grad-CAM
+                const cGrad = document.getElementById('canvas-gradcam');
+                if (cGrad) {
+                    const ctx = cGrad.getContext('2d');
+                    cGrad.width = 400;
+                    cGrad.height = 400;
+                    ctx.drawImage(img, 0, 0, 400, 400);
+
+                    // Overlay Heatmap Gradient
+                    const grad = ctx.createRadialGradient(210, 190, 20, 200, 200, 140);
+                    grad.addColorStop(0, 'rgba(239, 68, 68, 0.75)'); // Red center salience
+                    grad.addColorStop(0.4, 'rgba(245, 158, 11, 0.6)'); // Yellow mid
+                    grad.addColorStop(0.7, 'rgba(59, 130, 246, 0.3)'); // Blue outer
+                    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, 400, 400);
+                }
+
+                // 2. Draw ViT Attention Grid
+                const cViT = document.getElementById('canvas-vit');
+                if (cViT) {
+                    const ctx = cViT.getContext('2d');
+                    cViT.width = 400;
+                    cViT.height = 400;
+                    ctx.drawImage(img, 0, 0, 400, 400);
+
+                    // Draw 8x8 Patch Grid Overlay with varying alpha
+                    const gridSize = 8;
+                    const patchDim = 400 / gridSize;
+                    for (let r = 0; r < gridSize; r++) {
+                        for (let c = 0; c < gridSize; c++) {
+                            const distFromCenter = Math.hypot(r - 3.5, c - 3.5);
+                            let alpha = Math.max(0, 0.7 - distFromCenter * 0.15);
+                            if ((r === 2 || r === 3) && (c === 4 || c === 5)) alpha = 0.85; // Focal patch highlight
+
+                            ctx.fillStyle = `rgba(99, 102, 241, ${alpha})`;
+                            ctx.fillRect(c * patchDim, r * patchDim, patchDim, patchDim);
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(c * patchDim, r * patchDim, patchDim, patchDim);
+                        }
+                    }
+                }
+            };
+        }
+
+        // MODAL HANDLERS
+        function openTeleconsultModal() {
+            document.getElementById('modal-teleconsult').classList.remove('hidden');
+        }
+        function closeTeleconsultModal() {
+            document.getElementById('modal-teleconsult').classList.add('hidden');
+        }
+        function confirmTeleconsult() {
+            closeTeleconsultModal();
+            alert('Teleconsultation request successfully queued! You will receive confirmation details shortly.');
+        }
+
+        function openClinicsModal() {
+            document.getElementById('modal-clinics').classList.remove('hidden');
+        }
+        function closeClinicsModal() {
+            document.getElementById('modal-clinics').classList.add('hidden');
+        }
+
+        // ==========================================
+        // MULTILINGUAL FLOATING CHATBOT LOGIC
+        // ==========================================
+        const chatbotTranslations = {
+            en: {
+                greeting: "Hello! I am your Health Support AI. I can explain your risk assessment metrics or guide you to certified dermatologists. How can I assist you?",
+                disclaimer: "Reminder: I am an AI assistant for research screening guidance. I cannot diagnose skin cancer. Always consult a medical specialist.",
+                doctorAdvice: "Based on clinical protocol, any suspicious or changing skin lesion should be examined in-person by a certified dermatologist. Would you like to view nearby clinics or schedule a teleconsultation?"
+            },
+            ta: {
+                greeting: "வணக்கம்! நான் உங்கள் சுகாதார உதவி AI. உங்கள் தோல் பரிசோதனை விவரங்களை விளக்க உதவுகிறேன். உங்களுக்கு எவ்வாறு உதவ வேண்டும்?",
+                disclaimer: "நினைவூட்டல்: இது ஆராய்ச்சி வழிகாட்டுதலுக்கான AI மட்டுமே. இது மருத்துவ நோயறிதல் அல்ல. மருத்துவரை அணுகவும்.",
+                doctorAdvice: "தோலில் ஏதேனும் மாற்றம் இருந்தால் உடனே தகுதிவாய்ந்த தோல் மருத்துவரை அணுகுவது மிக முக்கியம்."
+            },
+            te: {
+                greeting: "నమస్కారం! నేను మీ ఆరోగ్య సహాయక AIని. మీ స్క్రీనింగ్ ఫలితాలను అర్థం చేసుకోవడంలో నేను సహాయపడతాను. నేను మీకు ఎలా సహాయపడగలను?",
+                disclaimer: "గమనిక: ఇది కేవలం పరిశోధన స్క్రీనింగ్ మార్గదర్శకత్వం కోసం మాత్రమే. వైద్య నిపుణుడిని సంప్రదించండి.",
+                doctorAdvice: "సందేహాస్పదమైన ప్రతి చర్మ మచ్చను లైవ్ డెర్మటాలజిస్ట్ చేత తనిఖీ చేయించడం అవసరం."
+            },
+            hi: {
+                greeting: "नमस्ते! मैं आपका स्वास्थ्य सहायता AI हूँ। मैं आपकी स्किन स्क्रीनिंग रिपोर्ट को समझने में मदद कर सकता हूँ। मैं आपकी क्या सहायता करूँ?",
+                disclaimer: "ध्यान दें: यह AI केवल अनुसंधान और स्क्रीन गाइडेंस के लिए है। त्वचा विशेषज्ञ से परामर्श अवश्य लें।",
+                doctorAdvice: "किसी भी संदिग्ध या बदलते हुए तिल/मस्से की जाँच तुरंत किसी योग्य त्वचा विशेषज्ञ (Dermatologist) से करवाएं।"
+            }
+        };
+
+        function toggleChatbot() {
+            const drawer = document.getElementById('chatbot-drawer');
+            drawer.classList.toggle('hidden');
+        }
+
+        function initChatbotGreeting() {
+            const log = document.getElementById('chat-messages');
+            const lang = state.chatLanguage;
+            const t = chatbotTranslations[lang] || chatbotTranslations.en;
+
+            log.innerHTML = `
+                <div class="bg-blue-100 text-blue-950 p-3 rounded-2xl border border-blue-200 leading-relaxed shadow-sm space-y-1">
+                    <div class="font-bold flex items-center gap-1.5 text-xs text-blue-900">
+                        <i class="fa-solid fa-robot"></i> Health Support AI
+                    </div>
+                    <p>${t.greeting}</p>
+                    <div class="text-[10px] text-blue-700 italic border-t border-blue-200/60 pt-1 mt-1">${t.disclaimer}</div>
+                </div>
+            `;
+        }
+
+        function changeChatLanguage() {
+            state.chatLanguage = document.getElementById('chat-language').value;
+            initChatbotGreeting();
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            appendUserMessage(msg);
+            input.value = '';
+
+            setTimeout(() => {
+                respondToUserMessage(msg);
+            }, 600);
+        }
+
+        function sendQuickPrompt(promptText) {
+            appendUserMessage(promptText);
+            setTimeout(() => {
+                respondToUserMessage(promptText);
+            }, 500);
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        function appendUserMessage(text) {
+            const log = document.getElementById('chat-messages');
+            const userBubble = `
+                <div class="flex justify-end">
+                    <div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] leading-relaxed shadow-sm">
+                        ${text}
+                    </div>
+                </div>
+            `;
+            log.innerHTML += userBubble;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function respondToUserMessage(userMsg) {
+            const log = document.getElementById('chat-messages');
+            const lang = state.chatLanguage;
+            const t = chatbotTranslations[lang] || chatbotTranslations.en;
+
+            let replyText = t.doctorAdvice;
+            const lower = userMsg.toLowerCase();
+
+            if (lower.includes('risk') || lower.includes('moderate') || lower.includes('meaning')) {
+                replyText = "The simulated risk index aggregates CNN surface features, ViT self-attention, and longitudinal evolution. Moderate risk indicates noticeable border asymmetry or growth that warrants clinical dermoscopy inspection.";
+            } else if (lower.includes('evolution') || lower.includes('tracking')) {
+                replyText = "Longitudinal evolution tracking uses Siamese affine registration to compare area expansion, border spiculation delta, and asymmetry shifts between two timepoint photos.";
+            } else if (lower.includes('cream') || lower.includes('ointment') || lower.includes('remedy')) {
+                replyText = "CRITICAL MEDICAL NOTICE: Never apply unprescribed topical creams, ointments, or attempt self-treatment on changing skin lesions. Please schedule a doctor consultation.";
+            }
+
+            const botBubble = `
+                <div class="flex justify-start space-y-1">
+                    <div class="bg-white text-slate-800 p-3 rounded-2xl rounded-tl-none max-w-[88%] leading-relaxed border border-slate-200 shadow-sm space-y-1">
+                        <div class="font-bold text-[11px] text-blue-600 flex items-center gap-1">
+                            <i class="fa-solid fa-robot"></i> Health AI
+                        </div>
+                        <p>${replyText}</p>
+                        <div class="text-[10px] text-amber-700 bg-amber-50 p-1.5 rounded border border-amber-100 font-semibold mt-1">
+                            <i class="fa-solid fa-user-doctor mr-1"></i> Always consult a certified dermatologist for clinical diagnosis.
+                        </div>
+                    </div>
+                </div>
+            `;
+            log.innerHTML += botBubble;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // VOICE INPUT INTEGRATION (WEB SPEECH API)
+        function toggleVoiceInput() {
+            const btn = document.getElementById('btn-voice-input');
+            const input = document.getElementById('chat-input');
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Voice input is not supported by your browser. Please type your message.');
+                return;
+            }
+
+            if (state.isListening) {
+                state.isListening = false;
+                btn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+                btn.classList.add('bg-slate-100', 'text-slate-600');
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = state.chatLanguage === 'ta' ? 'ta-IN' : (state.chatLanguage === 'te' ? 'te-IN' : (state.chatLanguage === 'hi' ? 'hi-IN' : 'en-US'));
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                state.isListening = true;
+                btn.classList.remove('bg-slate-100', 'text-slate-600');
+                btn.classList.add('bg-rose-500', 'text-white', 'animate-pulse');
+                input.placeholder = "Listening now...";
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                input.value = transcript;
+                state.isListening = false;
+                btn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+                btn.classList.add('bg-slate-100', 'text-slate-600');
+                input.placeholder = "Type or speak message...";
+                sendChatMessage();
+            };
+
+            recognition.onerror = function(event) {
+                state.isListening = false;
+                btn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+                btn.classList.add('bg-slate-100', 'text-slate-600');
+                input.placeholder = "Type or speak message...";
+                alert('Voice recognition error: ' + event.error);
+            };
+
+            recognition.start();
+        }
+    </script>
+</body>
+</html>

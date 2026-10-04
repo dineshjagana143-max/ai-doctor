@@ -1,0 +1,12 @@
+{
+  "name": "skin-cancer-screening-backend",
+  "version": "1.0.0",
+  "description": "API backend for CNN-ViT Skin Cancer Risk Screening Framework",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
