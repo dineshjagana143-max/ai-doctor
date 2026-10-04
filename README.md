@@ -8,43 +8,47 @@ A decision-support web application and API prototype for dermatological risk ass
 
 ```
 excel/
-├── client/                     # Frontend SPA Application
+├── frontend/                   # Frontend SPA Application (Vercel Ready)
 │   ├── public/
 │   │   └── index.html          # Main SPA (HTML5, Tailwind CSS, FontAwesome, JS)
-│   ├── .env.example            # Client environment template
-│   ├── Dockerfile              # Docker container configuration for client
-│   ├── netlify.toml            # Netlify deployment configuration
-│   ├── package.json            # Client package definition
-│   ├── server.js               # Static asset server for client
-│   └── vercel.json             # Vercel deployment configuration
-├── server/                     # Backend API Service
+│   ├── .env.example            # Frontend environment template
+│   ├── Dockerfile              # Docker container configuration for frontend
+│   ├── package.json            # Frontend package definition & build scripts
+│   ├── server.js               # Static asset server for local/container dev
+│   └── vercel.json             # Vercel deployment & routing configuration
+├── backend/                    # Backend API Service (Render Ready)
 │   ├── src/
 │   │   └── server.js           # Express/Node HTTP API with CORS & endpoints
-│   ├── .env.example            # Server environment template
-│   ├── Dockerfile              # Docker container configuration for backend
-│   └── package.json            # Server package definition
+│   ├── .env.example            # Backend environment template
+│   ├── Dockerfile              # Container image optimized for ML/CNN API on Render
+│   └── package.json            # Backend package definition
 ├── .gitignore                  # Git ignore rules
 ├── docker-compose.yml          # Multi-container local orchestration
-├── package.json                # Monorepo root script runner
-└── README.md                   # Documentation
+├── package.json                # Root script runner for monorepo
+├── render.yaml                 # Render Infrastructure-as-Code Blueprint
+└── README.md                   # Project documentation
 ```
 
 ---
 
 ## 🔑 Environment Variables
 
-### Frontend (`/client/.env.example`)
+### Frontend (`/frontend/.env.example`)
 ```env
 PORT=3000
 NODE_ENV=production
 API_URL=http://localhost:8080
 ```
 
-### Backend (`/server/.env.example`)
+### Backend (`/backend/.env.example`)
 ```env
 PORT=8080
+HOST=0.0.0.0
 NODE_ENV=production
-CLIENT_ORIGIN=http://localhost:3000
+CLIENT_ORIGIN=http://localhost:3000,https://your-frontend.vercel.app
+MODEL_NAME="CNN-EfficientNetB4 + ViT-Base"
+MODEL_PATH="./models/cnn_vit_skin_cancer.onnx"
+API_SECRET_KEY="your-production-secret-key"
 ```
 
 ---
@@ -58,33 +62,30 @@ docker compose up --build
 - **Frontend SPA**: `http://localhost:3000`
 - **Backend API**: `http://localhost:8080`
 
-### Option B: Run via Node.js
+### Option B: Run via Root npm Scripts
 
-#### 1. Start the Backend Server:
+#### Start Frontend & Backend:
 ```bash
-cd server
-npm start
-```
-
-#### 2. Start the Frontend Application:
-```bash
-cd client
-npm start
+npm run dev:backend
+npm run dev:frontend
 ```
 
 ---
 
 ## ☁️ Deployment Instructions
 
-### 1. Deploying Frontend (Vercel / Netlify)
-- **Root Directory**: `client`
-- **Publish Directory**: `public`
-- Set Environment Variable: `API_URL=https://your-backend-api.onrender.com`
+### 1. Deploying Frontend to Vercel
+- **Root Directory**: `frontend`
+- **Build Command**: `npm run build`
+- **Output Directory**: `public`
+- **Environment Variables**:
+  - `API_URL`: `https://your-backend.onrender.com`
 
-### 2. Deploying Backend (Render / Railway / AWS / Heroku)
-- **Root Directory**: `server`
-- **Build Command**: `npm install`
-- **Start Command**: `npm start`
-- Set Environment Variables:
-  - `PORT`: (automatically provided by cloud host)
+### 2. Deploying Backend to Render
+- **Root Directory**: `backend`
+- **Deployment Method**: Docker / `render.yaml` Blueprint
+- **Dockerfile Path**: `Dockerfile`
+- **Environment Variables**:
+  - `PORT`: (automatically set by Render, defaults to 8080)
+  - `HOST`: `0.0.0.0`
   - `CLIENT_ORIGIN`: `https://your-frontend.vercel.app`

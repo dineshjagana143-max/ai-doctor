@@ -1,0 +1,24 @@
+# Render Infrastructure as Code (Blueprint)
+services:
+  - type: web
+    name: skin-cancer-backend
+    env: docker
+    rootDir: backend
+    dockerfilePath: Dockerfile
+    plan: starter # Optimized instance type for ML/CNN inference workloads
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: HOST
+        value: 0.0.0.0
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_ORIGIN
+        sync: false # Set to your production Vercel frontend URL
+      - key: MODEL_NAME
+        value: "CNN-EfficientNetB4 + ViT-Base"
+      - key: MODEL_PATH
+        value: "./models/cnn_vit_skin_cancer.onnx"
+      - key: API_SECRET_KEY
+        generateValue: true
