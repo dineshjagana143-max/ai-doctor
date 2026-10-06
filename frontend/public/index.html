@@ -1514,14 +1514,26 @@
                 const lower = userMsg.toLowerCase().trim();
                 let category = 'fallback';
 
-                if (lower.includes('risk') || lower.includes('moderate') || lower.includes('meaning')) {
+                if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey') || lower.includes('வணக்கம்') || lower.includes('నమస్కారం') || lower.includes('नमस्ते')) {
+                    category = 'greeting';
+                } else if (lower.includes('thank') || lower.includes('thanks') || lower.includes('நன்றி') || lower.includes('ధన్యవాదాలు') || lower.includes('धन्यवाद')) {
+                    category = 'thanks';
+                } else if (lower.includes('risk') || lower.includes('moderate') || lower.includes('meaning') || lower.includes('அபாய') || lower.includes('ప్రమాద') || lower.includes('जोखिम')) {
                     category = 'risk';
-                } else if (lower.includes('evolution') || lower.includes('tracking')) {
+                } else if (lower.includes('evolution') || lower.includes('tracking') || lower.includes('growth') || lower.includes('வளர்ச்சி') || lower.includes('மார்పు') || lower.includes('इवोल्यूशन')) {
                     category = 'evolution';
-                } else if (lower.includes('cream') || lower.includes('ointment') || lower.includes('remedy')) {
+                } else if (lower.includes('abcde') || lower.includes('rule') || lower.includes('விதி') || lower.includes('నియమ') || lower.includes('नियम')) {
+                    category = 'abcde';
+                } else if (lower.includes('cream') || lower.includes('ointment') || lower.includes('remedy') || lower.includes('கிரீம்') || lower.includes('క్రీము') || lower.includes('मलहम')) {
                     category = 'cream';
+                } else if (lower.includes('doctor') || lower.includes('see') || lower.includes('consult') || lower.includes('clinic') || lower.includes('appointment') || lower.includes('மருத்துவர்') || lower.includes('వైద్యుడిని') || lower.includes('डॉक्टर')) {
+                    category = 'doctor';
+                } else if (lower.includes('symptom') || lower.includes('sign') || lower.includes('bleed') || lower.includes('itch') || lower.includes('அறிகுறி') || lower.includes('లక్షణాలు') || lower.includes('लक्षण')) {
+                    category = 'symptoms';
+                } else if (lower.includes('sun') || lower.includes('spf') || lower.includes('prevent') || lower.includes('பாதுகாப்பு') || lower.includes('రక్షణ') || lower.includes('धूप')) {
+                    category = 'prevention';
                 }
-                replyText = resp[category] || dict.doctorAdvice;
+                replyText = resp[category] || resp.fallback || dict.doctorAdvice;
             }
 
             const formattedContent = replyText.replace(/\n/g, '<br/>');

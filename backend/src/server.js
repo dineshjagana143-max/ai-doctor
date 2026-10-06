@@ -235,5 +235,13 @@ server.listen(PORT, HOST, () => {
     console.log(`[Backend Server] Listening on ${HOST}:${PORT} (${NODE_ENV} mode)`);
     console.log(`[CORS] Configured origin(s): ${CLIENT_ORIGIN}`);
     console.log(`[Model] Loaded Model: ${MODEL_NAME} (${MODEL_PATH})`);
-    console.log(`[Gemini AI] Integration status: ${GEMINI_API_KEY ? 'Active (API Key loaded)' : 'Inactive (Set GEMINI_API_KEY in .env)'}`);
+    if (GEMINI_API_KEY) {
+        if (GEMINI_API_KEY.startsWith('AIzaSy')) {
+            console.log(`[Gemini AI] Integration status: Active (Valid AI Studio Key loaded)`);
+        } else {
+            console.log(`[Gemini AI Warning] Key loaded ('${GEMINI_API_KEY.slice(0, 8)}...'), but Google AI Studio keys usually start with 'AIzaSy...'. Get your key from https://aistudio.google.com/app/apikey`);
+        }
+    } else {
+        console.log(`[Gemini AI] Integration status: Inactive (Set GEMINI_API_KEY in .env)`);
+    }
 });
