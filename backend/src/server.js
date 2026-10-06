@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const url = require('url');
 
 // Environment Variable Configuration
@@ -9,6 +10,64 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const MODEL_NAME = process.env.MODEL_NAME || 'CNN-EfficientNetB4 + ViT-Base';
 const MODEL_PATH = process.env.MODEL_PATH || './models/cnn_vit_skin_cancer.onnx';
 const API_SECRET_KEY = process.env.API_SECRET_KEY || 'dev-secret-key';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+
+// Helper to call Google Gemini 1.5 Flash API
+function callGeminiAPI(userMessage, language, callback) {
+    if (!GEMINI_API_KEY) {
+        return callback(new Error('GEMINI_API_KEY is not configured in backend environment'));
+    }
+
+    const langNames = { ta: 'Tamil', te: 'Telugu', hi: 'Hindi', en: 'English' };
+    const targetLang = langNames[language] || 'English';
+
+    const systemPrompt = `You are Health Support AI, an empathetic medical decision-support assistant for a Dermatological Skin Cancer Risk Screening & Lesion Evolution tracking platform. Provide a helpful, clear, and concise answer (under 120 words) in ${targetLang}. Always include a polite recommendation to consult a certified dermatologist for in-person skin evaluation. User question: "${userMessage}"`;
+
+    const postData = JSON.stringify({
+        contents: [
+            {
+                role: 'user',
+                parts: [{ text: systemPrompt }]
+            }
+        ]
+    });
+
+    const options = {
+        hostname: 'generativelanguage.googleapis.com',
+        port: 443,
+        path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    const req = https.request(options, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => { responseBody += chunk; });
+        res.on('end', () => {
+            try {
+                const parsed = JSON.parse(responseBody);
+                if (parsed.candidates && parsed.candidates[0] && parsed.candidates[0].content && parsed.candidates[0].content.parts[0]) {
+                    const replyText = parsed.candidates[0].content.parts[0].text;
+                    return callback(null, replyText);
+                } else {
+                    return callback(new Error(parsed.error ? parsed.error.message : 'Unexpected Gemini API response structure'));
+                }
+            } catch (err) {
+                return callback(err);
+            }
+        });
+    });
+
+    req.on('error', (err) => {
+        callback(err);
+    });
+
+    req.write(postData);
+    req.end();
+}
 
 // Helper to determine allowed origin for CORS
 function getAllowedOrigin(incomingOrigin) {
@@ -19,7 +78,6 @@ function getAllowedOrigin(incomingOrigin) {
     if (allowedOrigins.includes(incomingOrigin)) {
         return incomingOrigin;
     }
-    // Fallback: return primary allowed origin if non-matching request
     return allowedOrigins[0] || '*';
 }
 
@@ -55,8 +113,38 @@ const server = http.createServer((req, res) => {
             port: PORT,
             model: MODEL_NAME,
             modelPath: MODEL_PATH,
+            geminiEnabled: !!GEMINI_API_KEY,
             timestamp: new Date().toISOString()
         }));
+    }
+
+    if (pathname === '/api/chat' && method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            let payload = {};
+            try { payload = JSON.parse(body); } catch (e) {}
+            const message = payload.message || '';
+            const language = payload.language || 'en';
+
+            callGeminiAPI(message, language, (err, aiReply) => {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                if (!err && aiReply) {
+                    return res.end(JSON.stringify({
+                        success: true,
+                        reply: aiReply,
+                        source: 'gemini-1.5-flash'
+                    }));
+                } else {
+                    return res.end(JSON.stringify({
+                        success: false,
+                        error: err ? err.message : 'Gemini API unavailable',
+                        fallback: true
+                    }));
+                }
+            });
+        });
+        return;
     }
 
     if (pathname === '/api/analyze' && method === 'POST') {
@@ -100,7 +188,8 @@ const server = http.createServer((req, res) => {
         version: '2.4.0',
         environment: NODE_ENV,
         healthCheck: '/api/health',
-        analyzeEndpoint: '/api/analyze'
+        analyzeEndpoint: '/api/analyze',
+        chatEndpoint: '/api/chat'
     }));
 });
 
@@ -108,4 +197,5 @@ server.listen(PORT, HOST, () => {
     console.log(`[Backend Server] Listening on ${HOST}:${PORT} (${NODE_ENV} mode)`);
     console.log(`[CORS] Configured origin(s): ${CLIENT_ORIGIN}`);
     console.log(`[Model] Loaded Model: ${MODEL_NAME} (${MODEL_PATH})`);
+    console.log(`[Gemini AI] Integration status: ${GEMINI_API_KEY ? 'Active (API Key loaded)' : 'Inactive (Set GEMINI_API_KEY in .env)'}`);
 });

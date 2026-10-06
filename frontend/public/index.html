@@ -1402,21 +1402,34 @@
 
         function toggleChatbot() {
             const drawer = document.getElementById('chatbot-drawer');
+            if (!drawer) return;
             drawer.classList.toggle('hidden');
+            if (!drawer.classList.contains('hidden')) {
+                const log = document.getElementById('chat-messages');
+                if (!log || log.children.length === 0) {
+                    initChatbotGreeting();
+                }
+                const input = document.getElementById('chat-input');
+                if (input) input.focus();
+            }
         }
 
         function initChatbotGreeting() {
             const log = document.getElementById('chat-messages');
-            const lang = state.chatLanguage;
+            if (!log) return;
+            const lang = state.chatLanguage || 'en';
             const t = chatbotTranslations[lang] || chatbotTranslations.en;
 
             log.innerHTML = `
                 <div class="bg-blue-100 text-blue-950 p-3 rounded-2xl border border-blue-200 leading-relaxed shadow-sm space-y-1">
                     <div class="font-bold flex items-center gap-1.5 text-xs text-blue-900">
-                        <i class="fa-solid fa-robot"></i> Health Support AI
+                        <i class="fa-solid fa-robot text-blue-600"></i> Health Support AI
                     </div>
-                    <p>${t.greeting}</p>
-                    <div class="text-[10px] text-blue-700 italic border-t border-blue-200/60 pt-1 mt-1">${t.disclaimer}</div>
+                    <p class="text-xs text-slate-800">${t.greeting}</p>
+                    <div class="text-[10px] text-blue-700 italic border-t border-blue-200/60 pt-1 mt-1 flex items-start gap-1">
+                        <i class="fa-solid fa-shield-halved mt-0.5 shrink-0"></i>
+                        <span>${t.disclaimer}</span>
+                    </div>
                 </div>
             `;
         }
@@ -1428,6 +1441,7 @@
 
         function sendChatMessage() {
             const input = document.getElementById('chat-input');
+            if (!input) return;
             const msg = input.value.trim();
             if (!msg) return;
 
@@ -1436,27 +1450,29 @@
 
             setTimeout(() => {
                 respondToUserMessage(msg);
-            }, 600);
+            }, 350);
         }
 
         function sendQuickPrompt(promptText) {
             appendUserMessage(promptText);
             setTimeout(() => {
                 respondToUserMessage(promptText);
-            }, 500);
+            }, 350);
         }
 
         function handleChatKeyPress(event) {
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
                 sendChatMessage();
             }
         }
 
         function appendUserMessage(text) {
             const log = document.getElementById('chat-messages');
+            if (!log) return;
             const userBubble = `
-                <div class="flex justify-end">
-                    <div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] leading-relaxed shadow-sm">
+                <div class="flex justify-end my-2">
+                    <div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] leading-relaxed shadow-sm text-xs">
                         ${text}
                     </div>
                 </div>
@@ -1465,31 +1481,62 @@
             log.scrollTop = log.scrollHeight;
         }
 
-        function respondToUserMessage(userMsg) {
+        async function respondToUserMessage(userMsg) {
             const log = document.getElementById('chat-messages');
-            const lang = state.chatLanguage;
-            const t = chatbotTranslations[lang] || chatbotTranslations.en;
+            if (!log) return;
+            const lang = state.chatLanguage || 'en';
 
-            let replyText = t.doctorAdvice;
-            const lower = userMsg.toLowerCase();
+            let replyText = null;
+            let sourceBadge = '';
 
-            if (lower.includes('risk') || lower.includes('moderate') || lower.includes('meaning')) {
-                replyText = "The simulated risk index aggregates CNN surface features, ViT self-attention, and longitudinal evolution. Moderate risk indicates noticeable border asymmetry or growth that warrants clinical dermoscopy inspection.";
-            } else if (lower.includes('evolution') || lower.includes('tracking')) {
-                replyText = "Longitudinal evolution tracking uses Siamese affine registration to compare area expansion, border spiculation delta, and asymmetry shifts between two timepoint photos.";
-            } else if (lower.includes('cream') || lower.includes('ointment') || lower.includes('remedy')) {
-                replyText = "CRITICAL MEDICAL NOTICE: Never apply unprescribed topical creams, ointments, or attempt self-treatment on changing skin lesions. Please schedule a doctor consultation.";
+            // Try live Gemini 1.5 Flash API endpoint via Backend
+            try {
+                const apiEndpoint = (CONFIG.API_URL || '') + '/api/chat';
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userMsg, language: lang })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.reply) {
+                        replyText = data.reply;
+                        sourceBadge = '<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-mono font-semibold ml-auto">Gemini 1.5 Flash</span>';
+                    }
+                }
+            } catch (err) {
+                // Fallback to local response if backend or Gemini API key is unavailable
             }
 
+            if (!replyText) {
+                const dict = chatbotTranslations[lang] || chatbotTranslations.en;
+                const resp = dict.responses || chatbotTranslations.en.responses;
+                const lower = userMsg.toLowerCase().trim();
+                let category = 'fallback';
+
+                if (lower.includes('risk') || lower.includes('moderate') || lower.includes('meaning')) {
+                    category = 'risk';
+                } else if (lower.includes('evolution') || lower.includes('tracking')) {
+                    category = 'evolution';
+                } else if (lower.includes('cream') || lower.includes('ointment') || lower.includes('remedy')) {
+                    category = 'cream';
+                }
+                replyText = resp[category] || dict.doctorAdvice;
+            }
+
+            const formattedContent = replyText.replace(/\n/g, '<br/>');
+
             const botBubble = `
-                <div class="flex justify-start space-y-1">
-                    <div class="bg-white text-slate-800 p-3 rounded-2xl rounded-tl-none max-w-[88%] leading-relaxed border border-slate-200 shadow-sm space-y-1">
-                        <div class="font-bold text-[11px] text-blue-600 flex items-center gap-1">
-                            <i class="fa-solid fa-robot"></i> Health AI
+                <div class="flex justify-start my-2">
+                    <div class="bg-white text-slate-800 p-3.5 rounded-2xl rounded-tl-none max-w-[90%] leading-relaxed border border-slate-200 shadow-sm space-y-1.5 text-xs">
+                        <div class="font-bold text-[11px] text-blue-600 flex items-center justify-between gap-1.5">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-robot"></i> Health AI</span>
+                            ${sourceBadge}
                         </div>
-                        <p>${replyText}</p>
-                        <div class="text-[10px] text-amber-700 bg-amber-50 p-1.5 rounded border border-amber-100 font-semibold mt-1">
-                            <i class="fa-solid fa-user-doctor mr-1"></i> Always consult a certified dermatologist for clinical diagnosis.
+                        <p class="text-slate-700">${formattedContent}</p>
+                        <div class="text-[10px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200/80 font-medium mt-1.5 flex items-start gap-1">
+                            <i class="fa-solid fa-user-doctor text-amber-600 mt-0.5 shrink-0"></i>
+                            <span>Always consult a certified dermatologist for clinical evaluation.</span>
                         </div>
                     </div>
                 </div>
